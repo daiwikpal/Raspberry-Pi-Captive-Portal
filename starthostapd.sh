@@ -9,6 +9,19 @@ if [ $(id -u) -ne 0 ]
   exit
 fi
 
+# Check if wlan0 is already connected to a Wi-Fi network
+# Wait up to 30 seconds for wpa_supplicant to complete its connection attempt
+echo "Waiting for wlan0 to connect..."
+for i in $(seq 1 6); do
+    CURRENT_IP=$(wpa_cli -i wlan0 status | grep -E "^ip_address=" | cut -d'=' -f2)
+    if [ -n "$CURRENT_IP" ]; then
+        echo "wlan0 already connected (IP: $CURRENT_IP). Skipping captive portal setup."
+        exit 2
+    fi
+    sleep 5
+done
+echo "No Wi-Fi connection detected. Starting captive portal..."
+
 # Create a virtual network interface for the access point
 sudo iw dev wlan0 interface add ap0 type __ap
 
